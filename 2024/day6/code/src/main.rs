@@ -1,8 +1,6 @@
 use std::fs;
 use std::collections::HashMap;
 use std::collections::HashSet;
-//use std::cmp::Ordering;
-//use itertools::Itertools;
 
 #[derive(Clone, Copy)]
 enum Direction {
@@ -12,15 +10,14 @@ enum Direction {
     Left = 3,
 }
 
-impl From<usize> for Direction {
-    fn from(value: usize) -> Direction {
-        return match value {
-            0 => Direction::Up,
-            1 => Direction::Right,
-            2 => Direction::Down,
-            3 => Direction::Left,
-            _ => Direction::Up
-        }
+impl Direction {
+    fn turn_right(&mut self) {
+        *self = match self {
+            Direction::Up => Direction::Right,
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+        };
     }
 }
 
@@ -51,8 +48,10 @@ fn run(contents: &str, lab_map_base: &HashMap<i32, Vec<bool>>, obstacles_base: &
     
     // Run
     let mut cycle = false;
-    while (current.0 >= 0 && current.0 < height) && 
-          (current.1 >= 0 && current.1 < width) {
+    while current.0 >= 0 && current.0 < height && current.1 >= 0 && current.1 < width {
+        if obstacles.contains(&(current.0*width + current.1)) {
+            println!("c'est la merde");
+        }
         if lab_map[&(current.0*width + current.1)][direction.clone() as usize] == true {
             cycle = true;
             break;
@@ -63,9 +62,11 @@ fn run(contents: &str, lab_map_base: &HashMap<i32, Vec<bool>>, obstacles_base: &
         }
         lab_map.get_mut(&index).unwrap()[direction.clone() as usize] = true;
         let mut next = get_next(current, direction);
+        if next.0 < 0 || next.0 >= height || next.1 < 0 || next.1 >= width {
+            break;
+        }
         while obstacles.contains(&(next.0*width + next.1)) {
-            direction = Direction::from(((direction as usize) + 1) % 4);
-            lab_map.get_mut(&index).unwrap()[direction.clone() as usize] = true;
+            direction.turn_right();
             next = get_next(current, direction);
         }
         current = next;
@@ -113,19 +114,9 @@ fn main() {
     println!("Loop detected: {loop_detected}");
     println!("Visited is {visited}");
 
-    //let mut forbidden: HashSet<i32> =HashSet::new();
-    //let mut y = start.0;
-    //while (y > 0) && (!obstacles.contains(&(y*width+start.1))) {
-    //    forbidden.insert(y);
-    //    y -= 1;
-    //}
-
     let mut cycles = 0;
     for x in 0..height {
-    //for x in 0..10 {
         for y in 0..width {
-        //for y in 0..10 {
-            println!("x={x}/y={y}");
             if !visited_map.contains_key(&(x*width+y)) {
                 continue;
             }
@@ -138,9 +129,6 @@ fn main() {
             if (x == start.0) && (y == start.1) {
                 continue;
             }
-            //if (y == start.1) && forbidden.contains(&x) {
-            //  continue;
-            //}
             let (cycle, _, _) = run(&contents,  &lab_map, &obstacles, &start, Some((x, y)));
             if cycle == true {
                cycles += 1;
