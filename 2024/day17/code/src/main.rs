@@ -137,4 +137,55 @@ fn main() {
     }
     println!("Cycles: {pcc}");
     println!("output is: {:?}", output);
+    output.clear();
+
+    // Part2
+    let mut reg_a_start = 0;
+    let mut index = 0;
+    while index != code.len() {
+        let refs: Vec<i64> = vec![code[code.len()-1 - index-1], code[code.len()-1-index]];
+        let mut part_reg_a_start = 0;
+        while true {
+            state.reg_a = part_reg_a_start | (reg_a_start << 6);
+            //state.reg_a = part_reg_a_start;
+            state.reg_b = reg_b;
+            state.reg_c = reg_c;
+            state.pc = 0;
+            pcc = 0;
+            let mut outs = Vec::<i64>::new();
+            while (state.pc < (code.len() as i64)) {
+                if let Some(o) = execute_one(&mut state, &code) {
+                    outs.push(o);
+                    if outs.len() == 2 {
+                        break;
+                    }
+                }
+                pcc += 1;
+            }
+            if outs.len() == 2 && outs[0] == refs[0] && outs[1] == refs[1] {
+                break;
+            }
+            part_reg_a_start += 1;
+            pcc = 0;
+        }
+        reg_a_start = part_reg_a_start | (reg_a_start << 6); 
+        index += 2;
+    }
+    println!(" -> Success with reg_a = {} !", reg_a_start);
+
+    // Check
+    state.reg_a = reg_a_start;
+    state.reg_b = reg_b;
+    state.reg_c = reg_c;
+    state.pc = 0;
+    pcc = 0;
+    output.clear();
+    while state.pc < (code.len() as i64) {
+        if let Some(o) = execute_one(&mut state, &code) {
+            output.push(o);
+        }
+        pcc += 1;
+    }
+    println!("Cycles: {pcc}");
+    println!("output is: {:?}", output);
 }
